@@ -1,0 +1,141 @@
+---
+name: deep-work-workflow
+description: |
+  This skill should be used when the user wants to follow a structured, phase-based
+  development workflow that separates research, planning, and implementation into
+  distinct phases. Common triggers include requests for "deep work", "3단계 워크플로우",
+  "기획과 코딩 분리", "plan before code", "리서치 플랜 구현", or "structured workflow".
+  It applies when the user says things like "analyze the codebase first then plan",
+  "research then plan then implement", "분석 후 구현", "계획 세우고 구현",
+  or wants to enforce strict separation between planning and coding to avoid
+  premature implementation. This skill covers the full Research -> Plan -> Implement
+  lifecycle including phase enforcement, state management, and iterative plan review.
+---
+
+# Deep Work Workflow: Research → Plan → Implement
+
+## Why This Workflow Exists
+
+When AI coding tools work on complex tasks without structure, common failure modes emerge:
+
+1. **Architecture Ignorance**: AI generates code that doesn't follow existing patterns
+2. **Duplicate Implementation**: AI creates new utilities when equivalent ones already exist
+3. **Premature Coding**: AI starts writing code before understanding the full picture
+4. **Scope Creep**: AI adds "improvements" not requested, introducing bugs
+5. **Inconsistency**: AI uses different conventions than the rest of the codebase
+
+The Deep Work workflow prevents these by **strictly separating analysis, planning, and coding** into three distinct phases with enforced gates between them.
+
+## The Three Phases
+
+### Phase 1: Research (`/deep-research`)
+
+**Goal**: Build a complete mental model of the relevant codebase before making any decisions.
+
+**What happens**:
+- Exhaustive analysis of architecture, patterns, and conventions
+- Identification of all relevant files, dependencies, and risk areas
+- Documentation of everything in `deep-work/research.md`
+
+**What's blocked**: All code file modifications (enforced by hook)
+
+**Key principle**: "You cannot plan what you don't understand, and you cannot understand what you haven't read."
+
+**Team mode**: 3 specialist agents (arch-analyst, pattern-analyst, risk-analyst) analyze the codebase in parallel, then results are synthesized into a single research document.
+
+For detailed guidance, see [Research Guide](references/research-guide.md).
+
+### Phase 2: Plan (`/deep-plan`)
+
+**Goal**: Create a detailed, reviewable, approvable implementation plan.
+
+**What happens**:
+- Transform research findings into a concrete action plan
+- Define exact files to modify, code snippets, execution order
+- Document trade-offs, risks, and rollback strategies
+- Create a checklist-style task list in `deep-work/plan.md`
+
+**What's blocked**: All code file modifications (enforced by hook)
+
+**Key principle**: "The plan is the contract between human and AI. No implementation without approval."
+
+**Feedback loop**: The user reviews the plan, adds notes, and the plan is refined until explicitly approved.
+
+**Note**: Plan phase does not use Team mode — planning requires a single coherent document produced by one agent.
+
+For detailed guidance, see [Planning Guide](references/planning-guide.md).
+
+### Phase 3: Implement (`/deep-implement`)
+
+**Goal**: Mechanically execute the approved plan, task by task.
+
+**What happens**:
+- Follow the plan checklist exactly
+- Implement one task at a time, marking each complete
+- Run verification (type checks, lints, tests) as applicable
+- Document any issues encountered — never improvise
+
+**What's allowed**: All tools — code modification is now permitted
+
+**Key principle**: "The best implementation is a boring implementation. No creativity, no surprises, just faithful execution."
+
+**Team mode**: Tasks are clustered by file ownership and distributed to parallel agents. After implementation, agents cross-review each other's work before final verification.
+
+For detailed guidance, see [Implementation Guide](references/implementation-guide.md).
+
+## Phase Enforcement
+
+A PreToolUse hook (`phase-guard.sh`) enforces phase boundaries:
+
+- During **Research** and **Plan** phases: Write/Edit tools are blocked for all files except `deep-work/` documents and the state file
+- During **Implement** phase: All tools are available
+- When no session is active: No restrictions
+
+This is not a suggestion — it's a hard gate. The AI literally cannot modify code files until the plan is approved.
+
+## Quick Start
+
+```
+/deep-work "Add user authentication with JWT tokens"   # Initialize session (Solo/Team 선택)
+/deep-research                                          # Phase 1: Analyze codebase
+# Review deep-work/research.md
+/deep-plan                                              # Phase 2: Create plan
+# Review deep-work/plan.md, add notes, iterate
+# Type "승인" when satisfied
+/deep-implement                                         # Phase 3: Execute plan
+```
+
+When initializing with `/deep-work`, you'll be asked to choose between **Solo** and **Team** mode. Team mode requires Agent Teams to be enabled in your environment.
+
+## State Management
+
+Session state is stored in `.claude/deep-work.local.md` with YAML frontmatter tracking:
+- Current phase
+- Task description
+- Research completion status
+- Plan approval status
+- Iteration count
+- **Team mode** (`solo` or `team`)
+- Timestamps
+
+Use `/deep-status` at any time to see the current state, work mode, and next recommended action.
+
+## When to Use Deep Work
+
+**Use it when**:
+- The task touches multiple files or modules
+- You're working in an unfamiliar codebase
+- The change has architectural implications
+- Previous AI attempts have gone wrong
+- You want to review the approach before any code is written
+
+**Consider Team mode when**:
+- The codebase is large and research would benefit from parallel analysis
+- The implementation plan has many independent tasks across different files
+- Complex refactoring that touches many modules simultaneously
+- You want built-in cross-review of implementation quality
+
+**Skip it when**:
+- Simple one-file bug fixes
+- Trivial text or config changes
+- You already know exactly what to do

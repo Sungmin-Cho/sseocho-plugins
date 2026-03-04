@@ -1,0 +1,5 @@
+.claude/
+deep-work/
+*.local.md
+.git/
+.DS_Store

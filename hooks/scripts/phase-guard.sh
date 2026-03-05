@@ -6,6 +6,19 @@
 
 set -euo pipefail
 
+# Normalize path separators for cross-platform checks
+# - Converts backslashes to slashes (Windows -> POSIX style)
+# - Keeps drive letters (e.g. C:/...)
+normalize_path() {
+  local p="$1"
+  p="${p//\\//}"
+  # collapse duplicate slashes (except URL-like, which we don't expect here)
+  while [[ "$p" == *"//"* ]]; do
+    p="${p//\/\//\/}"
+  done
+  printf '%s' "$p"
+}
+
 # Find the project root by looking for .claude/ directory
 find_project_root() {
   local dir="$PWD"
@@ -22,6 +35,8 @@ find_project_root() {
 
 PROJECT_ROOT="$(find_project_root 2>/dev/null || echo "$PWD")"
 STATE_FILE="$PROJECT_ROOT/.claude/deep-work.local.md"
+PROJECT_ROOT_NORM="$(normalize_path "$PROJECT_ROOT")"
+STATE_FILE_NORM="$(normalize_path "$STATE_FILE")"
 
 # If no state file exists, deep-work workflow is not active → allow everything
 if [[ ! -f "$STATE_FILE" ]]; then
@@ -72,21 +87,24 @@ if [[ -z "$FILE_PATH" ]]; then
   exit 0
 fi
 
-# Normalize the file path for comparison
-RESOLVED_PATH="$FILE_PATH"
-if [[ "$FILE_PATH" == /* ]]; then
-  RESOLVED_PATH="$FILE_PATH"
+# Normalize the incoming file path for comparison
+FILE_PATH_NORM="$(normalize_path "$FILE_PATH")"
+
+# Resolve absolute/relative paths (supports POSIX + Windows drive-letter absolute paths)
+RESOLVED_PATH_NORM="$FILE_PATH_NORM"
+if [[ "$FILE_PATH_NORM" =~ ^[A-Za-z]:/ ]] || [[ "$FILE_PATH_NORM" == /* ]]; then
+  RESOLVED_PATH_NORM="$FILE_PATH_NORM"
 else
-  RESOLVED_PATH="$PROJECT_ROOT/$FILE_PATH"
+  RESOLVED_PATH_NORM="$(normalize_path "$PROJECT_ROOT_NORM/$FILE_PATH_NORM")"
 fi
 
 # Allow edits to deep-work/ directory (documentation files)
-if echo "$RESOLVED_PATH" | grep -q "/deep-work/"; then
+if [[ "$RESOLVED_PATH_NORM" == *"/deep-work/"* ]]; then
   exit 0
 fi
 
 # Allow edits to the state file itself
-if [[ "$RESOLVED_PATH" == "$STATE_FILE" ]] || echo "$RESOLVED_PATH" | grep -q "\.claude/deep-work\.local\.md"; then
+if [[ "$RESOLVED_PATH_NORM" == "$STATE_FILE_NORM" ]] || [[ "$RESOLVED_PATH_NORM" == *"/.claude/deep-work.local.md" ]]; then
   exit 0
 fi
 
@@ -96,7 +114,7 @@ if [[ "$CURRENT_PHASE" == "plan" ]]; then
   PHASE_LABEL="기획(Plan)"
 fi
 
-cat <<EOF
+cat <<JSON
 {"decision":"block","reason":"⛔ Deep Work Guard: 현재 ${PHASE_LABEL} 단계입니다. 코드 파일 수정이 차단되었습니다.\n\n수정 시도된 파일: ${FILE_PATH}\n\n${PHASE_LABEL} 단계에서는 deep-work/ 디렉토리 내 문서만 수정할 수 있습니다.\n구현을 시작하려면 먼저 /deep-plan으로 계획을 승인받은 후 /deep-implement를 실행하세요."}
-EOF
+JSON
 exit 2

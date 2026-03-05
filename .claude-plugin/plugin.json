@@ -3,5 +3,12 @@
   "description": "3-phase workflow (Research → Plan → Implement) enforcing strict separation of planning and coding",
   "author": {
     "name": "sungmin"
-  }
+  },
+  "keywords": [
+    "workflow",
+    "deep-work",
+    "research",
+    "planning",
+    "agent-team"
+  ]
 }

@@ -3,13 +3,28 @@ name: deep-work-workflow
 description: |
   This skill should be used when the user wants to follow a structured, phase-based
   development workflow that separates research, planning, and implementation into
-  distinct phases. Common triggers include requests for "deep work", "3단계 워크플로우",
-  "기획과 코딩 분리", "plan before code", "리서치 플랜 구현", or "structured workflow".
-  It applies when the user says things like "analyze the codebase first then plan",
-  "research then plan then implement", "분석 후 구현", "계획 세우고 구현",
-  or wants to enforce strict separation between planning and coding to avoid
-  premature implementation. This skill covers the full Research -> Plan -> Implement
-  lifecycle including phase enforcement, state management, and iterative plan review.
+  distinct phases. It applies when users say things like "deep work", "3단계 워크플로우",
+  "기획과 코딩 분리", "plan before code", "리서치 플랜 구현", "structured workflow",
+  "analyze the codebase first then plan", "research then plan then implement",
+  "분석 후 구현", "계획 세우고 구현", or want to enforce strict separation between
+  planning and coding to avoid premature implementation. Also use this skill when
+  the user describes a complex, multi-file task that would benefit from structured
+  planning — for example "복잡한 기능 구현", "여러 파일을 수정해야 하는 작업",
+  "큰 작업을 체계적으로 진행하고 싶어", "코드 분석 먼저 하고 싶어", "구현 전에
+  계획부터 세워줘", "this is a big change, let's plan first", "analyze the codebase
+  before we start", "I want to understand the code before making changes", or any
+  request involving architectural changes, cross-module refactoring, or unfamiliar
+  codebase exploration where jumping straight to implementation would risk mistakes.
+  This skill covers the full Research -> Plan -> Implement lifecycle including
+  phase enforcement, state management, and iterative plan review. Even if the user
+  does not explicitly mention "deep work" or "workflow", consider triggering this
+  skill for complex feature requests touching multiple files or modules where a
+  structured approach would prevent common AI coding pitfalls like architecture
+  ignorance, duplicate implementation, or premature coding.
+compatibility: |
+  Team mode requires Agent Teams feature (CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1).
+  Solo mode works with standard Claude Code installation.
+  Requires PreToolUse hook support for phase enforcement.
 ---
 
 # Deep Work Workflow: Research → Plan → Implement
@@ -60,6 +75,8 @@ For detailed guidance, see [Research Guide](references/research-guide.md).
 **Key principle**: "The plan is the contract between human and AI. No implementation without approval."
 
 **Feedback loop**: The user reviews the plan, adds notes, and the plan is refined until explicitly approved.
+
+**Self-review**: Before presenting the plan to the user, review the plan against the research findings for internal consistency — verify all referenced files exist, all patterns are respected, and no contradictions exist between tasks. Document any inconsistencies found and resolved.
 
 **Note**: Plan phase does not use Team mode — planning requires a single coherent document produced by one agent.
 
@@ -139,3 +156,34 @@ Use `/deep-status` at any time to see the current state, work mode, and next rec
 - Simple one-file bug fixes
 - Trivial text or config changes
 - You already know exactly what to do
+
+## Complexity Assessment
+
+Not every task needs the full three-phase workflow. Assess task complexity before starting:
+
+**Full 3-phase workflow (Research -> Plan -> Implement):**
+- Touches 5+ files across multiple modules
+- Involves architectural changes or new patterns
+- Working in an unfamiliar codebase
+- Previous attempts have gone wrong
+- High-risk changes (auth, data, payments)
+
+**Lightweight mode (skip to /deep-plan directly):**
+- Touches 2-4 files in a well-understood area
+- Follows established patterns with minor extensions
+- Medium complexity where a plan helps but exhaustive research is overkill
+- Start with `/deep-work` then `/deep-plan` directly, skipping `/deep-research`
+
+**No workflow needed:**
+- Single-file bug fixes or config changes
+- Trivial text edits
+- Tasks where the solution is already known
+
+## Complementary Usage with Built-in Plan Mode
+
+Deep Work and Claude's built-in plan mode serve different purposes and can work together:
+
+- **Built-in plan mode**: Lightweight, good for quick task decomposition and initial design review
+- **Deep Work**: Heavyweight, enforces strict phase gates with documentation artifacts and session persistence
+
+**Combined usage pattern**: Use built-in plan mode for initial task decomposition, then Deep Work for complex subtasks that need thorough research and planning before implementation.

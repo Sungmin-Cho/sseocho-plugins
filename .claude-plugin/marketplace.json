@@ -9,7 +9,7 @@
     {
       "name": "deep-work",
       "description": "3-phase workflow (Research → Plan → Implement) enforcing strict separation of planning and coding",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "source": "./"
     }
   ]

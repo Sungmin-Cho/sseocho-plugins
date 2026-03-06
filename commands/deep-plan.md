@@ -1,5 +1,5 @@
 ---
-allowed-tools: Read, Grep, Glob, Agent, Write
+allowed-tools: Read, Grep, Glob, Agent, Write, Bash
 description: "Phase 2: Deep planning - create a detailed implementation plan"
 ---
 
